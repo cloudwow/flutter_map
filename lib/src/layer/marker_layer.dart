@@ -76,7 +76,7 @@ class Marker {
   final double width;
   final double height;
   final Anchor anchor;
-
+  final GlobalKey globalKey = GlobalKey();
   Marker({
     this.point,
     this.builder,
@@ -86,34 +86,58 @@ class Marker {
   }) : this.anchor = Anchor._forPos(anchorPos, width, height);
 }
 
-class MarkerLayer extends StatelessWidget {
+class MarkerLayer extends StatefulWidget {
   final MarkerLayerOptions markerOpts;
   final MapState map;
   final Stream<Null> stream;
 
   MarkerLayer(this.markerOpts, this.map, this.stream);
 
+  @override
+  State<StatefulWidget> createState() {
+    return _MarkerLayerState();
+  }
+}
+
+class _MarkerLayerState extends State<MarkerLayer> {
+  void _afterLayout(_) {
+    print("ABCXYZ AFter Layout MarkerLayer");
+    _getSizes();
+  }
+
+  void _getSizes() {
+    for (var markerOpt in widget.markerOpts.markers) {
+      final RenderBox renderBoxRed =
+          markerOpt.globalKey.currentContext.findRenderObject();
+      final sizeRed = renderBoxRed.size;
+      print("SIZE of marker: $sizeRed");
+    }
+  }
+
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback(_afterLayout);
     return new StreamBuilder<int>(
-      stream: stream, // a Stream<int> or null
+      stream: widget.stream, // a Stream<int> or null
       builder: (BuildContext context, AsyncSnapshot<int> snapshot) {
         var markers = <Widget>[];
-        for (var markerOpt in this.markerOpts.markers) {
-          var pos = map.project(markerOpt.point);
-          pos = pos.multiplyBy(map.getZoomScale(map.zoom, map.zoom)) -
-              map.getPixelOrigin();
+        for (var markerOpt in widget.markerOpts.markers) {
+          var pos = widget.map.project(markerOpt.point);
+          pos = pos.multiplyBy(
+                  widget.map.getZoomScale(widget.map.zoom, widget.map.zoom)) -
+              widget.map.getPixelOrigin();
 
           var pixelPosX =
               (pos.x - (markerOpt.width - markerOpt.anchor.left)).toDouble();
           var pixelPosY =
               (pos.y - (markerOpt.height - markerOpt.anchor.top)).toDouble();
 
-          if (!map.bounds.contains(markerOpt.point)) {
+          if (!widget.map.bounds.contains(markerOpt.point)) {
             continue;
           }
 
           markers.add(
             new Positioned(
+              key: markerOpt.globalKey,
               width: markerOpt.width,
               height: markerOpt.height,
               left: pixelPosX,
