@@ -1,7 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map/src/map/map.dart';
 import 'package:latlong/latlong.dart';
+import 'speech_bubble.dart';
 
 class MarkerLayerOptions extends LayerOptions {
   final List<Marker> markers;
@@ -77,20 +79,25 @@ class Marker {
   final double height;
   final Anchor anchor;
   final GlobalKey globalKey = GlobalKey();
+  final String speech;
+  Size layoutSize;
+  Offset layoutPosition;
   Marker({
-    this.point,
-    this.builder,
-    this.width = 30.0,
-    this.height = 30.0,
+    @required this.point,
+    @required this.builder,
+    this.width: 30.0,
+    this.height: 30.0,
+    this.speech,
     AnchorPos anchorPos,
   }) : this.anchor = Anchor._forPos(anchorPos, width, height);
+
+  bool get hasSpeech => this.speech != null && this.speech.isNotEmpty;
 }
 
 class MarkerLayer extends StatefulWidget {
   final MarkerLayerOptions markerOpts;
   final MapState map;
   final Stream<Null> stream;
-
   MarkerLayer(this.markerOpts, this.map, this.stream);
 
   @override
@@ -101,56 +108,94 @@ class MarkerLayer extends StatefulWidget {
 
 class _MarkerLayerState extends State<MarkerLayer> {
   void _afterLayout(_) {
-    print("ABCXYZ AFter Layout MarkerLayer");
     _getSizes();
   }
 
   void _getSizes() {
+    bool needsRebuild = false;
     for (var markerOpt in widget.markerOpts.markers) {
       final RenderBox renderBoxRed =
-          markerOpt.globalKey.currentContext.findRenderObject();
-      final sizeRed = renderBoxRed.size;
-      print("SIZE of marker: $sizeRed");
+          markerOpt.globalKey.currentContext?.findRenderObject();
+      if (renderBoxRed == null) {
+        continue;
+      }
+
+      if (markerOpt.hasSpeech && markerOpt.layoutSize != renderBoxRed.size) {
+        needsRebuild = true;
+      }
+      markerOpt.layoutSize = renderBoxRed.size;
+      markerOpt.layoutPosition = renderBoxRed.localToGlobal(Offset.zero);
+
+      print(
+          "ABCXYZ marker layout size: ${markerOpt.layoutSize}, position: ${markerOpt.layoutPosition}");
+    }
+    if (needsRebuild) {
+      setState(() {});
     }
   }
 
   Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback(_afterLayout);
     return new StreamBuilder<int>(
       stream: widget.stream, // a Stream<int> or null
       builder: (BuildContext context, AsyncSnapshot<int> snapshot) {
-        var markers = <Widget>[];
-        for (var markerOpt in widget.markerOpts.markers) {
-          var pos = widget.map.project(markerOpt.point);
-          pos = pos.multiplyBy(
-                  widget.map.getZoomScale(widget.map.zoom, widget.map.zoom)) -
-              widget.map.getPixelOrigin();
+        return LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+          List<Widget> markersWithSpeech = [];
+          var markers = <Widget>[];
+          for (var markerOpt in widget.markerOpts.markers) {
+            var pos = widget.map.project(markerOpt.point);
+            pos = pos.multiplyBy(
+                    widget.map.getZoomScale(widget.map.zoom, widget.map.zoom)) -
+                widget.map.getPixelOrigin();
 
-          var pixelPosX =
-              (pos.x - (markerOpt.width - markerOpt.anchor.left)).toDouble();
-          var pixelPosY =
-              (pos.y - (markerOpt.height - markerOpt.anchor.top)).toDouble();
+            var pixelPosX =
+                (pos.x - (markerOpt.width - markerOpt.anchor.left)).toDouble();
+            var pixelPosY =
+                (pos.y - (markerOpt.height - markerOpt.anchor.top)).toDouble();
 
-          if (!widget.map.bounds.contains(markerOpt.point)) {
-            continue;
+            if (!widget.map.bounds.contains(markerOpt.point)) {
+              continue;
+            }
+
+            markers.add(
+              new Positioned(
+                key: markerOpt.globalKey,
+                // width: markerOpt.width,
+                //  height: markerOpt.height,
+                left: pixelPosX,
+                top: pixelPosY,
+                child: markerOpt.builder(context),
+              ),
+            );
+            if (markerOpt.hasSpeech &&
+                markerOpt.layoutSize != null &&
+                !markerOpt.layoutSize.isEmpty) {
+              markersWithSpeech.add(Positioned(
+                  width: 120,
+                  //  height: markerOpt.height,
+                  left: pixelPosX,
+                  bottom:constraints.maxHeight- pixelPosY,
+                  child: SpeechBubble(
+                      popupDirection: TooltipDirection.up_right,
+                      content: new Material(
+                          color: Colors.white,
+                          child: Text(
+                            markerOpt.speech,
+                            softWrap: true,
+                            style: TextStyle(color: Colors.black),
+                          )))));
+            }
           }
 
-          markers.add(
-            new Positioned(
-              key: markerOpt.globalKey,
-              width: markerOpt.width,
-              height: markerOpt.height,
-              left: pixelPosX,
-              top: pixelPosY,
-              child: markerOpt.builder(context),
+          markers.addAll(markersWithSpeech);
+          WidgetsBinding.instance.addPostFrameCallback(_afterLayout);
+
+          return new Container(
+            child: new Stack(
+              children: markers,
             ),
           );
-        }
-        return new Container(
-          child: new Stack(
-            children: markers,
-          ),
-        );
+        });
       },
     );
   }
