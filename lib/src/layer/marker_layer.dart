@@ -125,9 +125,6 @@ class _MarkerLayerState extends State<MarkerLayer> {
       }
       markerOpt.layoutSize = renderBoxRed.size;
       markerOpt.layoutPosition = renderBoxRed.localToGlobal(Offset.zero);
-
-      print(
-          "ABCXYZ marker layout size: ${markerOpt.layoutSize}, position: ${markerOpt.layoutPosition}");
     }
     if (needsRebuild) {
       setState(() {});
@@ -156,27 +153,61 @@ class _MarkerLayerState extends State<MarkerLayer> {
             if (!widget.map.bounds.contains(markerOpt.point)) {
               continue;
             }
-
-            markers.add(
-              new Positioned(
+            Widget markerWidget = Positioned(
                 key: markerOpt.globalKey,
                 // width: markerOpt.width,
                 //  height: markerOpt.height,
                 left: pixelPosX,
                 top: pixelPosY,
-                child: markerOpt.builder(context),
-              ),
-            );
+                child: markerOpt.builder(context));
+
             if (markerOpt.hasSpeech &&
                 markerOpt.layoutSize != null &&
                 !markerOpt.layoutSize.isEmpty) {
+              //add speaking widgets to end so they appear over top of others
+              markers.add(markerWidget);
+              double centerX = pixelPosX + markerOpt.layoutSize.width / 2;
+              double centerY = pixelPosY + markerOpt.layoutSize.height / 2;
+              TooltipDirection popupDirection;
+              double left;
+              double right;
+              double top;
+              double bottom;
+              if (centerX > constraints.maxWidth / 2 &&
+                  centerY > constraints.maxHeight / 2) {
+                popupDirection = TooltipDirection.up_left;
+                right = constraints.maxWidth -
+                    pixelPosX -
+                    markerOpt.layoutSize.width;
+                bottom = constraints.maxHeight - pixelPosY;
+              } else if (centerX > constraints.maxWidth / 2 &&
+                  centerY <= constraints.maxHeight / 2) {
+                popupDirection = TooltipDirection.down_left;
+
+                right = constraints.maxWidth -
+                    pixelPosX -
+                    markerOpt.layoutSize.width;
+                top = pixelPosY + markerOpt.layoutSize.height;
+              } else if (centerX <= constraints.maxWidth / 2 &&
+                  centerY > constraints.maxHeight / 2) {
+                popupDirection = TooltipDirection.up_right;
+                left = pixelPosX;
+                bottom = constraints.maxHeight - pixelPosY;
+              } else if (centerX <= constraints.maxWidth / 2 &&
+                  centerY <= constraints.maxHeight / 2) {
+                popupDirection = TooltipDirection.down_right;
+                left = pixelPosX;
+                top = pixelPosY + markerOpt.layoutSize.height;
+              }
               markersWithSpeech.add(Positioned(
                   width: 120,
                   //  height: markerOpt.height,
-                  left: pixelPosX,
-                  bottom:constraints.maxHeight- pixelPosY,
+                  left: left,
+                  right: right,
+                  bottom: bottom,
+                  top: top,
                   child: SpeechBubble(
-                      popupDirection: TooltipDirection.up_right,
+                      popupDirection: popupDirection,
                       content: new Material(
                           color: Colors.white,
                           child: Text(
@@ -184,6 +215,8 @@ class _MarkerLayerState extends State<MarkerLayer> {
                             softWrap: true,
                             style: TextStyle(color: Colors.black),
                           )))));
+            } else {
+              markers.insert(0, markerWidget);
             }
           }
 
