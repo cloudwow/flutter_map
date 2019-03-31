@@ -89,6 +89,7 @@ class Marker {
     this.height: 30.0,
     this.speech,
     AnchorPos anchorPos,
+    GlobalKey globalKey: GlobalKey()
   }) : this.anchor = Anchor._forPos(anchorPos, width, height);
 
   bool get hasSpeech => this.speech != null && this.speech.isNotEmpty;
