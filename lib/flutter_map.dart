@@ -15,6 +15,7 @@ export 'src/plugins/plugin.dart';
 export 'src/layer/layer.dart';
 export 'src/layer/tile_layer.dart';
 export 'src/layer/marker_layer.dart';
+export 'src/layer/speech_bubble.dart';
 export 'src/layer/polyline_layer.dart';
 export 'src/layer/polygon_layer.dart';
 export 'src/layer/circle_layer.dart';
