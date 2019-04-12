@@ -160,13 +160,13 @@ class _BubbleShape extends ShapeBorder {
     switch (popupDirection) {
       //
 
-      case TooltipDirection.down_right:
+      case TooltipDirection.down_left:
         var path = Path();
         path.moveTo(rect.right, rect.top + borderRadius);
         addRight(rect, path);
         addBottom(rect, path);
         addLeft(rect, path);
-        double arrowLeft = min(rect.left + borderRadius + 15, rect.right - 20 - borderRadius);
+        double arrowLeft = max(rect.left + borderRadius, rect.right - 20 - 10 - borderRadius);
         path
           ..lineTo(arrowLeft, rect.top)
           ..lineTo(arrowLeft + 10, rect.top - 20)
@@ -174,13 +174,13 @@ class _BubbleShape extends ShapeBorder {
         addTop(rect, path);
         return path;
 
-      case TooltipDirection.down_left:
+      case TooltipDirection.down_right:
         var path = Path();
         path.moveTo(rect.right, rect.top + borderRadius);
         addRight(rect, path);
         addBottom(rect, path);
         addLeft(rect, path);
-        double arrowLeft = max(rect.left + borderRadius, rect.right - 20 - 15 - borderRadius);
+        double arrowLeft = min(rect.left + borderRadius + 10, rect.right - 20 - borderRadius);
         path
           ..lineTo(arrowLeft, rect.top)
           ..lineTo(arrowLeft + 10, rect.top - 20)
@@ -194,7 +194,7 @@ class _BubbleShape extends ShapeBorder {
         addLeft(rect, path);
         addTop(rect, path);
         addRight(rect, path);
-        double arrowRight = min(rect.right - borderRadius, rect.left + 20 + borderRadius);
+        double arrowRight = min(rect.right - borderRadius, rect.left + 30 + borderRadius);
         path
           ..lineTo(arrowRight, rect.bottom)
           ..lineTo(arrowRight - 10, rect.bottom + 20)
@@ -207,7 +207,7 @@ class _BubbleShape extends ShapeBorder {
         addLeft(rect, path);
         addTop(rect, path);
         addRight(rect, path);
-        double arrowRight = max(rect.right - borderRadius - 15, rect.left + 20 + borderRadius);
+        double arrowRight = max(rect.right - borderRadius - 10, rect.left + 20 + borderRadius);
         path
           ..lineTo(arrowRight, rect.bottom)
           ..lineTo(arrowRight - 10, rect.bottom + 20)

@@ -7,6 +7,7 @@ import 'speech_bubble.dart';
 
 class MarkerLayerOptions extends LayerOptions {
   final List<Marker> markers;
+
   MarkerLayerOptions({this.markers = const [], rebuild})
       : super(rebuild: rebuild);
 }
@@ -59,8 +60,11 @@ class Anchor {
 
 class AnchorPos<T> {
   AnchorPos._(this.value);
+
   T value;
+
   static AnchorPos exactly(Anchor anchor) => AnchorPos._(anchor);
+
   static AnchorPos align(AnchorAlign alignOpt) => AnchorPos._(alignOpt);
 }
 
@@ -78,16 +82,18 @@ class Marker {
   final double width;
   final double height;
   final Anchor anchor;
-  final GlobalKey globalKey = GlobalKey();
+  final GlobalKey globalKey;
   final String speech;
   Size layoutSize;
   Offset layoutPosition;
+
   Marker({
     @required this.point,
     @required this.builder,
     this.width: 30.0,
     this.height: 30.0,
     this.speech,
+    this.globalKey: GlobalKey(),
     AnchorPos anchorPos,
   }) : this.anchor = Anchor._forPos(anchorPos, width, height);
 
@@ -98,6 +104,7 @@ class MarkerLayer extends StatefulWidget {
   final MarkerLayerOptions markerOpts;
   final MapState map;
   final Stream<Null> stream;
+
   MarkerLayer(this.markerOpts, this.map, this.stream);
 
   @override
@@ -115,7 +122,7 @@ class _MarkerLayerState extends State<MarkerLayer> {
     bool needsRebuild = false;
     for (var markerOpt in widget.markerOpts.markers) {
       final RenderBox renderBoxRed =
-          markerOpt.globalKey.currentContext?.findRenderObject();
+      markerOpt.globalKey.currentContext?.findRenderObject();
       if (renderBoxRed == null) {
         continue;
       }
@@ -137,98 +144,98 @@ class _MarkerLayerState extends State<MarkerLayer> {
       builder: (BuildContext context, AsyncSnapshot<int> snapshot) {
         return LayoutBuilder(
             builder: (BuildContext context, BoxConstraints constraints) {
-          List<Widget> markersWithSpeech = [];
-          var markers = <Widget>[];
-          for (var markerOpt in widget.markerOpts.markers) {
-            var pos = widget.map.project(markerOpt.point);
-            pos = pos.multiplyBy(
+              List<Widget> markersWithSpeech = [];
+              var markers = <Widget>[];
+              for (var markerOpt in widget.markerOpts.markers) {
+                var pos = widget.map.project(markerOpt.point);
+                pos = pos.multiplyBy(
                     widget.map.getZoomScale(widget.map.zoom, widget.map.zoom)) -
-                widget.map.getPixelOrigin();
+                    widget.map.getPixelOrigin();
 
-            var pixelPosX =
+                var pixelPosX =
                 (pos.x - (markerOpt.width - markerOpt.anchor.left)).toDouble();
-            var pixelPosY =
+                var pixelPosY =
                 (pos.y - (markerOpt.height - markerOpt.anchor.top)).toDouble();
 
-            if (!widget.map.bounds.contains(markerOpt.point)) {
-              continue;
-            }
-            Widget markerWidget = Positioned(
-                key: markerOpt.globalKey,
-                // width: markerOpt.width,
-                //  height: markerOpt.height,
-                left: pixelPosX,
-                top: pixelPosY,
-                child: markerOpt.builder(context));
+                if (!widget.map.bounds.contains(markerOpt.point)) {
+                  continue;
+                }
+                Widget markerWidget = Positioned(
+                    key: markerOpt.globalKey,
+                    // width: markerOpt.width,
+                    //  height: markerOpt.height,
+                    left: pixelPosX,
+                    top: pixelPosY,
+                    child: markerOpt.builder(context));
 
-            if (markerOpt.hasSpeech &&
-                markerOpt.layoutSize != null &&
-                !markerOpt.layoutSize.isEmpty) {
-              //add speaking widgets to end so they appear over top of others
-              markers.add(markerWidget);
-              double centerX = pixelPosX + markerOpt.layoutSize.width / 2;
-              double centerY = pixelPosY + markerOpt.layoutSize.height / 2;
-              TooltipDirection popupDirection;
-              double left;
-              double right;
-              double top;
-              double bottom;
-              if (centerX > constraints.maxWidth / 2 &&
-                  centerY > constraints.maxHeight / 2) {
-                popupDirection = TooltipDirection.up_left;
-                right = constraints.maxWidth -
-                    pixelPosX -
-                    markerOpt.layoutSize.width;
-                bottom = constraints.maxHeight - pixelPosY;
-              } else if (centerX > constraints.maxWidth / 2 &&
-                  centerY <= constraints.maxHeight / 2) {
-                popupDirection = TooltipDirection.down_left;
+                if (markerOpt.hasSpeech &&
+                    markerOpt.layoutSize != null &&
+                    !markerOpt.layoutSize.isEmpty) {
+                  //add speaking widgets to end so they appear over top of others
+                  markers.add(markerWidget);
+                  double centerX = pixelPosX + markerOpt.layoutSize.width / 2;
+                  double centerY = pixelPosY + markerOpt.layoutSize.height / 2;
+                  TooltipDirection popupDirection;
+                  double left;
+                  double right;
+                  double top;
+                  double bottom;
+                  if (centerX > constraints.maxWidth / 2 &&
+                      centerY > constraints.maxHeight / 2) {
+                    popupDirection = TooltipDirection.up_left;
+                    right = constraints.maxWidth -
+                        pixelPosX -
+                        markerOpt.layoutSize.width+20;
+                    bottom = constraints.maxHeight - pixelPosY+markerOpt.layoutSize.height/2;
+                  } else if (centerX > constraints.maxWidth / 2 &&
+                      centerY <= constraints.maxHeight / 2) {
+                    popupDirection = TooltipDirection.down_left;
 
-                right = constraints.maxWidth -
-                    pixelPosX -
-                    markerOpt.layoutSize.width;
-                top = pixelPosY + markerOpt.layoutSize.height;
-              } else if (centerX <= constraints.maxWidth / 2 &&
-                  centerY > constraints.maxHeight / 2) {
-                popupDirection = TooltipDirection.up_right;
-                left = pixelPosX;
-                bottom = constraints.maxHeight - pixelPosY;
-              } else if (centerX <= constraints.maxWidth / 2 &&
-                  centerY <= constraints.maxHeight / 2) {
-                popupDirection = TooltipDirection.down_right;
-                left = pixelPosX;
-                top = pixelPosY + markerOpt.layoutSize.height;
+                    right = constraints.maxWidth -
+                        pixelPosX -
+                        markerOpt.layoutSize.width+20;
+                    top = pixelPosY + markerOpt.layoutSize.height-markerOpt.layoutSize.height/2;;
+                  } else if (centerX <= constraints.maxWidth / 2 &&
+                      centerY > constraints.maxHeight / 2) {
+                    popupDirection = TooltipDirection.up_right;
+                    left = pixelPosX-markerOpt.layoutSize.width/2-10;
+                    bottom = constraints.maxHeight - pixelPosY+markerOpt.layoutSize.height/2;
+                  } else if (centerX <= constraints.maxWidth / 2 &&
+                      centerY <= constraints.maxHeight / 2) {
+                    popupDirection = TooltipDirection.down_right;
+                    left = pixelPosX-markerOpt.layoutSize.width/2-10;
+                    top = pixelPosY + markerOpt.layoutSize.height-markerOpt.layoutSize.height/2;;
+                  }
+                  markersWithSpeech.add(Positioned(
+                      width: 120,
+                      //  height: markerOpt.height,
+                      left: left,
+                      right: right,
+                      bottom: bottom,
+                      top: top,
+                      child: SpeechBubble(
+                          popupDirection: popupDirection,
+                          content: new Material(
+                              color: Colors.white,
+                              child: Text(
+                                markerOpt.speech,
+                                softWrap: true,
+                                style: TextStyle(color: Colors.black),
+                              )))));
+                } else {
+                  markers.insert(0, markerWidget);
+                }
               }
-              markersWithSpeech.add(Positioned(
-                  width: 120,
-                  //  height: markerOpt.height,
-                  left: left,
-                  right: right,
-                  bottom: bottom,
-                  top: top,
-                  child: SpeechBubble(
-                      popupDirection: popupDirection,
-                      content: new Material(
-                          color: Colors.white,
-                          child: Text(
-                            markerOpt.speech,
-                            softWrap: true,
-                            style: TextStyle(color: Colors.black),
-                          )))));
-            } else {
-              markers.insert(0, markerWidget);
-            }
-          }
 
-          markers.addAll(markersWithSpeech);
-          WidgetsBinding.instance.addPostFrameCallback(_afterLayout);
+              markers.addAll(markersWithSpeech);
+              WidgetsBinding.instance.addPostFrameCallback(_afterLayout);
 
-          return new Container(
-            child: new Stack(
-              children: markers,
-            ),
-          );
-        });
+              return new Container(
+                child: new Stack(
+                  children: markers,
+                ),
+              );
+            });
       },
     );
   }
