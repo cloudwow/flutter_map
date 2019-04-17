@@ -82,7 +82,7 @@ class Marker {
   final double width;
   final double height;
   final Anchor anchor;
-  final GlobalKey globalKey;
+   GlobalKey globalKey;
   final String speech;
   Size layoutSize;
   Offset layoutPosition;
@@ -93,9 +93,13 @@ class Marker {
     this.width: 30.0,
     this.height: 30.0,
     this.speech,
-    this.globalKey: GlobalKey(),
+    this.globalKey, 
     AnchorPos anchorPos,
-  }) : this.anchor = Anchor._forPos(anchorPos, width, height);
+  }) : this.anchor = Anchor._forPos(anchorPos, width, height) {
+    if(globalKey==null) {
+      globalKey= GlobalKey();
+    }
+  }
 
   bool get hasSpeech => this.speech != null && this.speech.isNotEmpty;
 }
