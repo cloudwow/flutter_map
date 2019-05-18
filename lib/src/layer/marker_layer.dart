@@ -200,7 +200,6 @@ class _MarkerLayerState extends State<MarkerLayer> {
                     20;
                 top = pixelPosY +
                     markerOpt.layoutSize.height ;
-                ;
               } else if (centerX <= constraints.maxWidth / 2 &&
                   centerY > constraints.maxHeight / 2) {
                 popupDirection = TooltipDirection.up_right;
@@ -213,7 +212,6 @@ class _MarkerLayerState extends State<MarkerLayer> {
                 left = pixelPosX - 10;
                 top = pixelPosY +
                     markerOpt.layoutSize.height ;
-                ;
               }
               markersWithSpeech.add(Positioned(
                   width: 120,
